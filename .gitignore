@@ -1,2 +1,3 @@
 .env
-api/_pycache_/
+api/__pycache__/
+
