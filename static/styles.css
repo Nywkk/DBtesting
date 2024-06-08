@@ -41,3 +41,37 @@ button[type="submit"]:hover {
     color: red;
     margin-top: 10px;
 }
+
+.product-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    padding: 20px;
+}
+
+.product-card {
+    width: 30%;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 10px;
+}
+
+.product-image {
+    width: 100%;
+    height: auto;
+    border-radius: 5px;
+}
+
+.product-name {
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+.product-price {
+    margin-top: 5px;
+}
+
+.product-description {
+    margin-top: 5px;
+}
