@@ -43,7 +43,7 @@ function submitForm(event) {
     event.preventDefault();
     var formData = new FormData(this);
     
-    fetch('/users', {
+    fetch('/api/users', {
         method: 'POST',
         body: JSON.stringify(Object.fromEntries(formData)),
         headers: {
