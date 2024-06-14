@@ -4,10 +4,13 @@ from mysql.connector import Error
 from dotenv import load_dotenv
 import os
 
+# Define a blueprint for the products API
 products_bp = Blueprint('products', __name__)
 
+# Load environment variables from a .env file
 load_dotenv()
 
+# Function to get all products from the database
 def get_products_from_db():
     try:
         # Establish the database connection
@@ -35,11 +38,13 @@ def get_products_from_db():
             cursor.close()
             connection.close()
 
+# Route to fetch all products
 @products_bp.route('/api/products', methods=['GET'])
 def fetch_products():
     products = get_products_from_db()
     return jsonify(products)
 
+# Route to add a new product
 @products_bp.route('/api/products', methods=['POST'])
 def add_product():
     data = request.json
@@ -74,6 +79,7 @@ def add_product():
             cursor.close()
             connection.close()
 
+# Route to fetch a single product by its ID
 @products_bp.route('/api/products/<int:product_id>', methods=['GET'])
 def get_product(product_id):
     try:
@@ -101,6 +107,7 @@ def get_product(product_id):
             cursor.close()
             connection.close()
 
+# Route to update a product by its ID
 @products_bp.route('/api/products/<int:product_id>', methods=['PUT'])
 def update_product(product_id):
     data = request.json
@@ -131,6 +138,35 @@ def update_product(product_id):
     except Error as e:
         print(f"Error updating product: {e}")
         return jsonify({"error": f"Failed to update product with ID {product_id}"})
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
+# Route to delete a product by its ID
+@products_bp.route('/api/products/<int:product_id>', methods=['DELETE'])
+def delete_product(product_id):
+    try:
+        connection = mysql.connector.connect(
+            user=os.getenv("DB_USERNAME"),
+            password=os.getenv("DB_PASSWORD"),
+            host=os.getenv("DB_HOST"),
+            port=os.getenv("DB_PORT"),
+            database=os.getenv("DB_NAME")
+        )
+
+        if connection.is_connected():
+            cursor = connection.cursor()
+            cursor.execute("DELETE FROM Products WHERE id = %s", (product_id,))
+            connection.commit()
+
+            if cursor.rowcount > 0:
+                return jsonify({"message": f"Product with ID {product_id} deleted successfully"})
+            else:
+                return jsonify({"error": f"Product with ID {product_id} not found"})
+    except Error as e:
+        print(f"Error deleting product: {e}")
+        return jsonify({"error": f"Failed to delete product with ID {product_id}"})
     finally:
         if connection.is_connected():
             cursor.close()
