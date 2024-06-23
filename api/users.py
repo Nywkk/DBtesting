@@ -1,44 +1,10 @@
-from aifc import Error
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, jsonify, request, current_app
+from .database import get_db_connection
 import mysql.connector
-from dotenv import load_dotenv
-import os
 
-user_bp = Blueprint('user', __name__)
+users_bp = Blueprint('users', __name__)
 
-load_dotenv()
-
-def insert_user(first_surname, second_surname, name, address, city, email, password, role):
-    try:
-        connection = mysql.connector.connect(
-            user=os.getenv("DB_USERNAME"),
-            password=os.getenv("DB_PASSWORD"),
-            host=os.getenv("DB_HOST"),
-            port=os.getenv("DB_PORT"),
-            database=os.getenv("DB_NAME")
-        )
-        cursor = connection.cursor()
-        
-        insert_query = """
-        INSERT INTO Users (FirstSurname, SecondSurname, Name, Address, City, Email, Password, role_id)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
-        """
-        record_to_insert = (first_surname, second_surname, name, address, city, email, password, role)
-        cursor.execute(insert_query, record_to_insert)
-        
-        connection.commit()
-        return {"message": "User added successfully"}
-        
-    except Exception as error:
-        return {"error": f"Error inserting user: {error}"}
-        
-    finally:
-        if connection:
-            cursor.close()
-            connection.close()
-
-
-@user_bp.route('/api/users', methods=['POST'])
+@users_bp.route('/users', methods=['POST'])
 def add_user():
     data = request.json
     first_surname = data.get('first_surname')
@@ -50,70 +16,91 @@ def add_user():
     password = data.get('password')
     role = 2  # Assuming role ID 2 corresponds to a specific role (e.g., "user")
     
-    if all([first_surname, name, address, city, email, password]):
-        result = insert_user(first_surname, second_surname, name, address, city, email, password, role)
-        return jsonify(result)
-    else:
-        return jsonify({"error": "Please fill out all required fields"})
-
-
-@user_bp.route('/api/users', methods=['GET'])
-def fetch_users():
+    connection = None
     try:
-        connection = mysql.connector.connect(
-            user=os.getenv("DB_USERNAME"),
-            password=os.getenv("DB_PASSWORD"),
-            host=os.getenv("DB_HOST"),
-            port=os.getenv("DB_PORT"),
-            database=os.getenv("DB_NAME")
-        )
+        db_config = {
+            'DB_HOST': current_app.config['DB_HOST'],
+            'DB_USERNAME': current_app.config['DB_USERNAME'],
+            'DB_PASSWORD': current_app.config['DB_PASSWORD'],
+            'DB_NAME': current_app.config['DB_NAME'],
+            'DB_PORT': current_app.config['DB_PORT']
+        }
+        connection = get_db_connection(db_config)
+        cursor = connection.cursor()
+        
+        insert_query = """
+        INSERT INTO Users (FirstSurname, SecondSurname, Name, Address, City, Email, Password, role_id)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
+        """
+        record_to_insert = (first_surname, second_surname, name, address, city, email, password, role)
+        cursor.execute(insert_query, record_to_insert)
+        
+        connection.commit()
+        return jsonify({"message": "User added successfully"})
+        
+    except mysql.connector.Error as error:
+        return jsonify({"error": f"Error inserting user: {error}"})
+        
+    finally:
+        if connection:
+            cursor.close()
+            connection.close()
 
-        if connection.is_connected():
-            cursor = connection.cursor(dictionary=True)
-            cursor.execute("SELECT id, FirstSurname, SecondSurname, Name, Address, City, Email, Password FROM Users")
+@users_bp.route('/users', methods=['GET'])
+def fetch_users():
+    connection = None
+    try:
+        db_config = {
+            'DB_HOST': current_app.config['DB_HOST'],
+            'DB_USERNAME': current_app.config['DB_USERNAME'],
+            'DB_PASSWORD': current_app.config['DB_PASSWORD'],
+            'DB_NAME': current_app.config['DB_NAME'],
+            'DB_PORT': current_app.config['DB_PORT']
+        }
+        connection = get_db_connection(db_config)
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT id, FirstSurname, SecondSurname, Name, Address, City, Email FROM Users")
 
-            users = cursor.fetchall()
-            return jsonify(users)
+        users = cursor.fetchall()
+        return jsonify(users)
 
-    except Error as e:
-        print(f"Error connecting to MariaDB: {e}")
+    except mysql.connector.Error as e:
+        print(f"Error fetching users: {e}")
         return jsonify({"error": "Failed to fetch users"})
         
     finally:
-        if connection.is_connected():
+        if connection:
             cursor.close()
             connection.close()
 
-
-@user_bp.route('/api/users/<int:user_id>', methods=['GET'])
+@users_bp.route('/users/<int:user_id>', methods=['GET'])
 def get_user(user_id):
+    connection = None
     try:
-        connection = mysql.connector.connect(
-            user=os.getenv("DB_USERNAME"),
-            password=os.getenv("DB_PASSWORD"),
-            host=os.getenv("DB_HOST"),
-            port=os.getenv("DB_PORT"),
-            database=os.getenv("DB_NAME")
-        )
-
-        if connection.is_connected():
-            cursor = connection.cursor(dictionary=True)
-            cursor.execute("SELECT id, FirstSurname, SecondSurname, Name, Address, City, Email, Password FROM Users WHERE id = %s", (user_id,))
-            user = cursor.fetchone()
-            if user:
-                return jsonify(user)
-            else:
-                return jsonify({"error": f"User with ID {user_id} not found"})
-    except Error as e:
+        db_config = {
+            'DB_HOST': current_app.config['DB_HOST'],
+            'DB_USERNAME': current_app.config['DB_USERNAME'],
+            'DB_PASSWORD': current_app.config['DB_PASSWORD'],
+            'DB_NAME': current_app.config['DB_NAME'],
+            'DB_PORT': current_app.config['DB_PORT']
+        }
+        connection = get_db_connection(db_config)
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT id, FirstSurname, SecondSurname, Name, Address, City, Email FROM Users WHERE id = %s", (user_id,))
+        user = cursor.fetchone()
+        if user:
+            return jsonify(user)
+        else:
+            return jsonify({"error": f"User with ID {user_id} not found"})
+    except mysql.connector.Error as e:
         print(f"Error fetching user: {e}")
         return jsonify({"error": "Failed to fetch user"})
     finally:
-        if connection.is_connected():
+        if connection:
             cursor.close()
             connection.close()
 
-
-@user_bp.route('/api/users/<int:user_id>', methods=['PUT'])
+@users_bp.route('/users/<int:user_id>', methods=['PUT'])
 def update_user(user_id):
     data = request.json
     first_surname = data.get('first_surname')
@@ -124,28 +111,28 @@ def update_user(user_id):
     email = data.get('email')
     password = data.get('password')
     
+    connection = None
     try:
-        connection = mysql.connector.connect(
-            user=os.getenv("DB_USERNAME"),
-            password=os.getenv("DB_PASSWORD"),
-            host=os.getenv("DB_HOST"),
-            port=os.getenv("DB_PORT"),
-            database=os.getenv("DB_NAME")
-        )
-
-        if connection.is_connected():
-            cursor = connection.cursor()
-            cursor.execute("""
-                UPDATE Users
-                SET FirstSurname = %s, SecondSurname = %s, Name = %s, Address = %s, City = %s, Email = %s, Password = %s
-                WHERE id = %s
-            """, (first_surname, second_surname, name, address, city, email, password, user_id))
-            connection.commit()
-            return jsonify({"message": f"User with ID {user_id} updated successfully"})
-    except Error as e:
+        db_config = {
+            'DB_HOST': current_app.config['DB_HOST'],
+            'DB_USERNAME': current_app.config['DB_USERNAME'],
+            'DB_PASSWORD': current_app.config['DB_PASSWORD'],
+            'DB_NAME': current_app.config['DB_NAME'],
+            'DB_PORT': current_app.config['DB_PORT']
+        }
+        connection = get_db_connection(db_config)
+        cursor = connection.cursor()
+        cursor.execute("""
+            UPDATE Users
+            SET FirstSurname = %s, SecondSurname = %s, Name = %s, Address = %s, City = %s, Email = %s, Password = %s
+            WHERE id = %s
+        """, (first_surname, second_surname, name, address, city, email, password, user_id))
+        connection.commit()
+        return jsonify({"message": f"User with ID {user_id} updated successfully"})
+    except mysql.connector.Error as e:
         print(f"Error updating user: {e}")
         return jsonify({"error": f"Failed to update user with ID {user_id}"})
     finally:
-        if connection.is_connected():
+        if connection:
             cursor.close()
             connection.close()
