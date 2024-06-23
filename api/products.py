@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request, current_app
-from .database import get_db_connection
+from .database import get_db
 import mysql.connector
 
 products_bp = Blueprint('products', __name__)
@@ -8,14 +8,7 @@ products_bp = Blueprint('products', __name__)
 def fetch_all_products():
     connection = None
     try:
-        db_config = {
-            'DB_HOST': current_app.config['DB_HOST'],
-            'DB_USERNAME': current_app.config['DB_USERNAME'],
-            'DB_PASSWORD': current_app.config['DB_PASSWORD'],
-            'DB_NAME': current_app.config['DB_NAME'],
-            'DB_PORT': current_app.config['DB_PORT']
-        }
-        connection = get_db_connection(db_config)
+        connection = get_db()
         cursor = connection.cursor(dictionary=True)
         cursor.execute("SELECT * FROM Products")
         products = cursor.fetchall()
@@ -39,14 +32,7 @@ def add_product():
     
     connection = None
     try:
-        db_config = {
-            'DB_HOST': current_app.config['DB_HOST'],
-            'DB_USERNAME': current_app.config['DB_USERNAME'],
-            'DB_PASSWORD': current_app.config['DB_PASSWORD'],
-            'DB_NAME': current_app.config['DB_NAME'],
-            'DB_PORT': current_app.config['DB_PORT']
-        }
-        connection = get_db_connection(db_config)
+        connection = get_db()
         cursor = connection.cursor()
         cursor.execute("""
             INSERT INTO Products (name, price, description, image, stock)
@@ -66,14 +52,7 @@ def add_product():
 def get_product(product_id):
     connection = None
     try:
-        db_config = {
-            'DB_HOST': current_app.config['DB_HOST'],
-            'DB_USERNAME': current_app.config['DB_USERNAME'],
-            'DB_PASSWORD': current_app.config['DB_PASSWORD'],
-            'DB_NAME': current_app.config['DB_NAME'],
-            'DB_PORT': current_app.config['DB_PORT']
-        }
-        connection = get_db_connection(db_config)
+        connection = get_db()
         cursor = connection.cursor(dictionary=True)
         cursor.execute("SELECT * FROM Products WHERE id = %s", (product_id,))
         product = cursor.fetchone()
@@ -100,14 +79,7 @@ def update_product(product_id):
     
     connection = None
     try:
-        db_config = {
-            'DB_HOST': current_app.config['DB_HOST'],
-            'DB_USERNAME': current_app.config['DB_USERNAME'],
-            'DB_PASSWORD': current_app.config['DB_PASSWORD'],
-            'DB_NAME': current_app.config['DB_NAME'],
-            'DB_PORT': current_app.config['DB_PORT']
-        }
-        connection = get_db_connection(db_config)
+        connection = get_db()
         cursor = connection.cursor()
         cursor.execute("""
             UPDATE Products

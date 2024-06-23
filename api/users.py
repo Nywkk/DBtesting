@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request, current_app
-from .database import get_db_connection
+from .database import get_db
 import mysql.connector
 
 users_bp = Blueprint('users', __name__)
@@ -18,14 +18,7 @@ def add_user():
     
     connection = None
     try:
-        db_config = {
-            'DB_HOST': current_app.config['DB_HOST'],
-            'DB_USERNAME': current_app.config['DB_USERNAME'],
-            'DB_PASSWORD': current_app.config['DB_PASSWORD'],
-            'DB_NAME': current_app.config['DB_NAME'],
-            'DB_PORT': current_app.config['DB_PORT']
-        }
-        connection = get_db_connection(db_config)
+        connection = get_db()
         cursor = connection.cursor()
         
         insert_query = """
@@ -50,14 +43,7 @@ def add_user():
 def fetch_users():
     connection = None
     try:
-        db_config = {
-            'DB_HOST': current_app.config['DB_HOST'],
-            'DB_USERNAME': current_app.config['DB_USERNAME'],
-            'DB_PASSWORD': current_app.config['DB_PASSWORD'],
-            'DB_NAME': current_app.config['DB_NAME'],
-            'DB_PORT': current_app.config['DB_PORT']
-        }
-        connection = get_db_connection(db_config)
+        connection = get_db()
         cursor = connection.cursor(dictionary=True)
         cursor.execute("SELECT id, FirstSurname, SecondSurname, Name, Address, City, Email FROM Users")
 
@@ -77,14 +63,7 @@ def fetch_users():
 def get_user(user_id):
     connection = None
     try:
-        db_config = {
-            'DB_HOST': current_app.config['DB_HOST'],
-            'DB_USERNAME': current_app.config['DB_USERNAME'],
-            'DB_PASSWORD': current_app.config['DB_PASSWORD'],
-            'DB_NAME': current_app.config['DB_NAME'],
-            'DB_PORT': current_app.config['DB_PORT']
-        }
-        connection = get_db_connection(db_config)
+        connection = get_db()
         cursor = connection.cursor(dictionary=True)
         cursor.execute("SELECT id, FirstSurname, SecondSurname, Name, Address, City, Email FROM Users WHERE id = %s", (user_id,))
         user = cursor.fetchone()
@@ -113,14 +92,7 @@ def update_user(user_id):
     
     connection = None
     try:
-        db_config = {
-            'DB_HOST': current_app.config['DB_HOST'],
-            'DB_USERNAME': current_app.config['DB_USERNAME'],
-            'DB_PASSWORD': current_app.config['DB_PASSWORD'],
-            'DB_NAME': current_app.config['DB_NAME'],
-            'DB_PORT': current_app.config['DB_PORT']
-        }
-        connection = get_db_connection(db_config)
+        connection = get_db()
         cursor = connection.cursor()
         cursor.execute("""
             UPDATE Users
